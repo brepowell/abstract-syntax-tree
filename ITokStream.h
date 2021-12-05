@@ -17,12 +17,12 @@ class ITokStream
    ITokStream(istream& inputStream);
 
    //enum choices for TokType:
-   enum class TokType { addop, mulop, powop, variable, number, lparen, rparen, assign, eol, end };
+   enum class TokType { null, addop, mulop, powop, variable, number, lparen, rparen, assign, eol, end };
 
    /*TOKEN STRUCT*/
    struct Token 
    {
-      Token(TokType t, string v)
+      Token(TokType t = TokType::null, string v = "")
       :  type_(t), value_(v) {};
 
       //The type of token the Token object holds
@@ -32,7 +32,7 @@ class ITokStream
       string value_;
    };//end Token class
 
-   /* This input operator>> overload will take in
+   /** This input operator>> overload will take in
    a token object and then help to set the TokType
    for that object. In essence, this is a setter for
    the type_ variable in the TokType enum class
