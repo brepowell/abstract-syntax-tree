@@ -28,30 +28,23 @@ ITokStream& ITokStream::operator>>(Token& rhs)
    string number = "";
    number.push_back(is_.peek());
  
+   //End signals
    if (is_.peek() == '.'){
       rhs.value_ = is_.get();
       rhs.type_ = TokType::end; //end  
    }else if (is_.peek() == '\n' ){
       rhs.value_ = is_.get();
-      rhs.type_ = TokType::eol; //eol  
+      rhs.type_ = TokType::eol; //eol 
+
+   //Operators 
    }else if (is_.peek() == ':'){
-      rhs.value_ += is_.get() + is_.get();
-      rhs.type_ = TokType::assign; //assign
-   }else if (is_.peek() == ')'){
-      rhs.value_ = is_.get();
-      rhs.type_ = TokType::rparen; //rparen
-   }else if (is_.peek() == '(' ){
-      rhs.value_ = is_.get();
-      rhs.type_ = TokType::lparen; //lparen
-   }else if (isdigit(number.back())){
-      while (isdigit(number.back())){       // loop to get double digit numbers
+      rhs.value_ += is_.get();
+      if(is_.peek() == '='){
          rhs.value_ += is_.get();
-         number.push_back(is_.peek());
-      }//end while
-      rhs.type_ = TokType::number; //number
-   }else if (tolower(number[0]) >= 'a' || tolower(number[0]) <= 'z'){
-      rhs.value_ = is_.get();
-      rhs.type_ = TokType::variable; //variable
+         rhs.type_ = TokType::assign; //assign
+      }else{
+         //error - not an assignment operator
+      }
    }else if (is_.peek() == '^' ){
       rhs.value_ = is_.get();
       rhs.type_ = TokType::powop; //powop
@@ -67,18 +60,40 @@ ITokStream& ITokStream::operator>>(Token& rhs)
    }else if (is_.peek() == '-' ){
       rhs.value_ = is_.get();
       rhs.type_ = TokType::addop; //addop
+
+   //Parentheses
+   }else if (is_.peek() == ')'){
+      rhs.value_ = is_.get();
+      rhs.type_ = TokType::rparen; //rparen
+   }else if (is_.peek() == '(' ){
+      rhs.value_ = is_.get();
+      rhs.type_ = TokType::lparen; //lparen
+
+   //Operands
+   }else if (isdigit(number.back())){
+      while (isdigit(number.back())){       // loop to get double digit numbers
+         rhs.value_ += is_.get();
+         number.push_back(is_.peek());
+      }//end while
+      rhs.type_ = TokType::number; //number
+   }else if (tolower(number.back()) >= 'a' && tolower(number.back()) <= 'z'){
+      rhs.value_ = is_.get();
+      rhs.type_ = TokType::variable; //variable
    }else{
       //THROW AN ERROR - not an acceptable type - &
    }
 
-   number = "";
+   //number = "";
 
-}//end operator >>
+   return *this;
+
+}//end operator>>
 
 /** Explicit type converter to a bool will
 test if there is an error on the input stream.
  @return  True if there is a flag */
-ITokStream::operator bool() const
+/*ITokStream::operator bool() const
 {
 
 }
+*/

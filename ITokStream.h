@@ -9,28 +9,30 @@
 #define ITOKSTREAM_H
 #include <iostream>
 #include <string>
+using namespace std;
+
+//enum choices for TokType:
+enum class TokType { null, addop, mulop, powop, variable, number, lparen, rparen, assign, eol, end };
+
+/*TOKEN STRUCT*/
+struct Token 
+{
+   explicit Token(TokType t = TokType::null, string v = "")
+      :  type_(t), value_(v) {};
+
+   //The type of token the Token object holds
+   TokType type_;
+
+   //The String of the token that the object holds
+   string value_;
+
+};//end Token class
 
 class ITokStream
 {
    public:
    /* Constructor*/
-   ITokStream(istream& inputStream);
-
-   //enum choices for TokType:
-   enum class TokType { null, addop, mulop, powop, variable, number, lparen, rparen, assign, eol, end };
-
-   /*TOKEN STRUCT*/
-   struct Token 
-   {
-      Token(TokType t = TokType::null, string v = "")
-      :  type_(t), value_(v) {};
-
-      //The type of token the Token object holds
-      TokType type_;
-
-      //The String of the token that the object holds
-      string value_;
-   };//end Token class
+   explicit ITokStream(istream& inputStream);
 
    /** This input operator>> overload will take in
    a token object and then help to set the TokType

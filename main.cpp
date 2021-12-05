@@ -9,6 +9,8 @@ using namespace std;
 
 int main(int argc, char const *argv[])
 {
+   //g++ *.cpp -std=c++11 -g -o test
+   //./test
 
 //Sample input to test:
 /*
@@ -24,23 +26,21 @@ z
    //The count of the number of lines so far (for echoing):
    int lineCount = 0;
 
-   //Create an ITokStream object
+   //Create an ITokStream object that takes in cin
    ITokStream test(cin);
 
    //Create a token
-   ITokStream::Token token;
-   test >> token;
+   Token testerToken;
+   test >> testerToken;
 
    //null, addop, mulop, powop, variable, number, lparen, rparen, assign, eol, end 
-
-   
    //Test the TokType setting:
-   cout << "value: " << token.value_ <<endl;
+   cout << "value: " << testerToken.value_ <<endl;
 
-   if(token.type_ == ITokStream::TokType::addop){
+   if(testerToken.type_ == TokType::mulop){
       cout << "true" <<endl;
-   }else
+   }else{
       cout << "false" <<endl;
-
+   }//end if-else
 
 }//end main
