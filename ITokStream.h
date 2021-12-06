@@ -40,7 +40,8 @@ class ITokStream
    the type_ variable in the TokType enum class
     @post The token will have a TokType set
       inside of the TokType type_ variable
-    @param rhs will take in a token object */
+    @param rhs will take in a token object
+    @return will return an ITokStream reference */
    ITokStream& operator>>(Token& rhs);
 
    /** Explicit type converter to a bool will

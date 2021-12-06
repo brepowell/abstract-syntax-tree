@@ -19,7 +19,8 @@ for that object. In essence, this is a setter for
 the type_ variable in the TokType enum class
  @post The token will have a TokType set
    inside of the TokType type_ variable
- @param rhs will take in a token object */
+ @param rhs will take in a token object
+ @return will return an ITokStream reference */
 ITokStream& ITokStream::operator>>(Token& rhs)
 {
    //For the token object,
@@ -43,7 +44,7 @@ ITokStream& ITokStream::operator>>(Token& rhs)
          rhs.value_ += is_.get();
          rhs.type_ = TokType::assign; //assign
       }else{
-         //error - not an assignment operator
+         //ERROR - not an assignment operator
       }
    }else if (is_.peek() == '^' ){
       rhs.value_ = is_.get();
@@ -71,9 +72,12 @@ ITokStream& ITokStream::operator>>(Token& rhs)
 
    //Operands
    }else if (isdigit(number.back())){
-      while (isdigit(number.back())){       // loop to get double digit numbers
+      while (isdigit(number.back())){
+         // loop to get double digit (or longer) numbers       
          rhs.value_ += is_.get();
          number.push_back(is_.peek());
+         //THROW AN ERROR - if the string is longer than an int can hold
+
       }//end while
       rhs.type_ = TokType::number; //number
    }else if (tolower(number.back()) >= 'a' && tolower(number.back()) <= 'z'){
@@ -81,10 +85,10 @@ ITokStream& ITokStream::operator>>(Token& rhs)
       rhs.type_ = TokType::variable; //variable
    }else{
       //THROW AN ERROR - not an acceptable type - &
+      //Currently, these are NULL type, as are whitespaces
    }
 
    //number = "";
-
    return *this;
 
 }//end operator>>
