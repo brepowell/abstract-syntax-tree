@@ -11,14 +11,13 @@ using namespace std;
 /** Echoes the input to cout for the user to see
   @param tokens the vector of tokens of one line
   @param lineCount the number of input lines so far */
-void echo(const vector<Token> &tokens, int lineCount)
+void echo(vector<Token> tokens, int lineCount)
 {
-   cout << "in [" << lineCount << "]: ";
-   for(int i = 0; i < tokens.size(); i++){
-      //Output the value of each token in the vector
-      cout << tokens[i].value_;
+   cout << "in  [" << lineCount << "]: ";
+   //Output the value of each token in the vector
+   for(Token i : tokens){
+      cout << i.value_;
    }
-   cout << endl;
 }//end echo
 
 /** MAIN */
@@ -54,7 +53,6 @@ z
       
       //Make sure the token is NOT an end of line or end token
       if(eachToken.type_ != TokType::eol && eachToken.type_ != TokType::end){
-
          //Take in one line of input
          while(eachToken.type_ != TokType::eol){
             //Take in more tokens (each one in the line)
@@ -63,25 +61,40 @@ z
             //Store the tokens from that line in order in a vector
             tokens.push_back(eachToken);
          }//end inner while - stop taking a line when eol is reached    
+      }//end if
       
-      //The end of the line has been reached
-      }else if (eachToken.type_ == TokType::eol){   
+      //The eol token has been reached
+      if (eachToken.type_ == TokType::eol){   
          //If the tokens vector is not empty, echo it
          if(!tokens.empty() && tokens[0].type_ != TokType::end){
-            echo(tokens, lineCount); //echo the line
             lineCount++; //Increase line count
+            echo(tokens, lineCount); //echo the line
          }//end if
          //Else, the line was blank - don't echo a blank line
       }//end else
+      
+      tokens.clear();
+      //cerr << "tokens was cleared" << endl;
    }
    while(eachToken.type_ != TokType::end);//end do - stop taking all input
-
+   
+   tokens.clear();
+   cerr << "tokens are cleared again" << endl;
    
 }//end main
 
    /** TESTS COMPLETED */
 
 /*
+   //Create an ITokStream object that takes in cin
+   ITokStream input(cin);
+   
+   //Create a token
+   Token eachToken;
+
+   //Take in one token (the first token in a line)
+   input >> eachToken;
+
    //Test the TokType setting - SUCCESSFUL WITH ALL TESTS!
    cout << "value: " << eachToken.value_ <<endl;
 

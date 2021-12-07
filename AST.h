@@ -9,6 +9,7 @@
 #define AST_H
 #include <iostream>
 #include <string>
+#include "ITokStream.h" //for Tokens
 using namespace std;
 
 class AST
@@ -69,13 +70,13 @@ class AST
    private:
 
    /** Infix traversal of an AST
-    @post  If successful, the simplify method will copy an entire tree.
+    @post  If successful, this will help the toInfix method
     @param root is the root node of the AST
     @return the pointer to current node in the AST */
-   void toInfixHelper(Node* root, string& infixExp);
+   void toInfixHelper(Node* root, string& infixExp) const;
 
    /** Copy the tree recursively
-    @post  If successful, the simplify method will copy an entire tree.
+    @post  If successful, the copy method will copy an entire tree.
     @param root is the root node of the original tree
     @return the root node of the new AST */
    Node* copy(Node* root);

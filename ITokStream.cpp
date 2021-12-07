@@ -26,16 +26,22 @@ ITokStream& ITokStream::operator>>(Token& rhs)
    //For the token object,
    //set type_ (TokType)
    //set value_ (string)
-   string number = "";
-   number.push_back(is_.peek());
- 
+
    //End signals
    if (is_.peek() == '.'){
-      rhs.value_ = is_.get();
-      rhs.type_ = TokType::end; //end  
+      rhs.value_ += is_.get(); //get is a char, adds to string
+      rhs.type_ = TokType::end; //end
+      //cerr << "Got a end" << endl;  //test
    }else if (is_.peek() == '\n' ){
-      rhs.value_ = is_.get();
+      rhs.value_ += is_.get();
       rhs.type_ = TokType::eol; //eol 
+      //cerr << "Got a eol" << endl; //test
+
+   //Spaces
+   }else if (is_.peek() == ' '){
+      rhs.value_ += is_.get();
+      rhs.type_ = TokType::null; //null
+      //cerr << "Got a space" << endl; //test
 
    //Operators 
    }else if (is_.peek() == ':'){
@@ -47,48 +53,50 @@ ITokStream& ITokStream::operator>>(Token& rhs)
          //ERROR - not an assignment operator
       }
    }else if (is_.peek() == '^' ){
-      rhs.value_ = is_.get();
+      rhs.value_ += is_.get();
       rhs.type_ = TokType::powop; //powop
    }else if (is_.peek() == '*' ){
-      rhs.value_ = is_.get();
+      rhs.value_ += is_.get();
       rhs.type_ = TokType::mulop; //mulop
    }else if (is_.peek() == '/' ){
-      rhs.value_ = is_.get();
+      rhs.value_ += is_.get();
       rhs.type_ = TokType::mulop; //mulop
    }else if (is_.peek() == '+'){
-      rhs.value_ = is_.get();
+      rhs.value_ += is_.get();
       rhs.type_ = TokType::addop; //addop
+      //cerr << "Got a +" << endl; //test
    }else if (is_.peek() == '-' ){
-      rhs.value_ = is_.get();
+      rhs.value_ += is_.get();
       rhs.type_ = TokType::addop; //addop
 
    //Parentheses
    }else if (is_.peek() == ')'){
-      rhs.value_ = is_.get();
+      rhs.value_ += is_.get();
       rhs.type_ = TokType::rparen; //rparen
    }else if (is_.peek() == '(' ){
-      rhs.value_ = is_.get();
+      rhs.value_ += is_.get();
       rhs.type_ = TokType::lparen; //lparen
 
    //Operands
-   }else if (isdigit(number.back())){
-      while (isdigit(number.back())){
-         // loop to get double digit (or longer) numbers       
-         rhs.value_ += is_.get();
-         number.push_back(is_.peek());
+   }else if (isdigit(is_.peek())){
+      rhs.value_ += is_.get();
+      // loop to get double digit (or longer) numbers 
+      while (isdigit(is_.peek())){
+         rhs.value_ += is_.get(); //continue to add digits onto value_
          //THROW AN ERROR - if the string is longer than an int can hold
-
       }//end while
       rhs.type_ = TokType::number; //number
-   }else if (tolower(number.back()) >= 'a' && tolower(number.back()) <= 'z'){
-      rhs.value_ = is_.get();
+      //cerr << "Got a number" << endl; //test
+      cerr << "number is " << rhs.value_ << endl;
+   }else if (isalpha(is_.peek())){
+      rhs.value_ += is_.get();
       rhs.type_ = TokType::variable; //variable
+      //cerr << "Got a letter" << endl; //test
    }else{
       //THROW AN ERROR - not an acceptable type - &
       //Currently, these are NULL type, as are whitespaces
    }
 
-   //number = "";
    return *this;
 
 }//end operator>>

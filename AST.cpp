@@ -11,8 +11,14 @@
 #include <queue>
 #include <stack>
 #include "AST.h"
-#include "ITokStream.h"
+#include "ITokStream.h" //for Tokens
 using namespace std;
+
+/*When the expression was tokenized and converted to a postfix vector, 
+   some tokens were not stored in the vector, such as 
+   null, assign, lparen, rparen, eol, and end.
+   Precedence was already considered in the conversion to postfix.
+   This constructor just needs to build the AST from the vector provided.*/
 
 /** AST Constructor 
  @post This will construct an AST from the leaves up
@@ -20,14 +26,6 @@ using namespace std;
    ordered as a postfix expression */
 AST::AST(vector<Token>& postfixExpr)
 {
-   /*When the expression was converted to postfix, 
-   some tokens were not stored in the vector, such as 
-   null, assign, lparen, rparen, eol, and end.
-   Precedence was already considered in the conversion to postfix.
-   This constructor just needs to build the AST from the vector provided.*/
-
-   //Token t;
-
    //Initialize pointers for the tree structure
    Node* parent = nullptr;
    Node* childLeft = nullptr;
@@ -54,7 +52,8 @@ AST::AST(vector<Token>& postfixExpr)
 
       //Loop through the queue, add the operands to the node stack
       while (!operandTokens.empty()){
-         Node* nodePtr = new Node(operandTokens.pop());
+         Node* nodePtr = new Node(operandTokens.front());
+         operandTokens.pop();//removes from queue
          //Node constructor takes in a token object
          operandNodes.push(nodePtr);
       }
@@ -68,8 +67,10 @@ AST::AST(vector<Token>& postfixExpr)
       )
       {
          parent = new Node(postfixExpr[i]);
-         childRight = operandNodes.pop();
-         childLeft = operandNodes.pop();
+         childRight = operandNodes.top(); //top() returns reference
+         operandNodes.pop(); //Removes the element from the stack
+         childLeft = operandNodes.top(); //top() returns reference
+         operandNodes.pop(); //Removes the element from the stack
       
          parent->right_ = childRight;
          parent->left_ = childLeft;
@@ -98,7 +99,8 @@ AST::AST(vector<Token>& postfixExpr)
 /** AST Copy Constructor*/
 AST::AST(const AST& original)
 {
-   copy(original.root_);
+   //copy returns a pointer to the new root
+   //root_ = copy(original.root_);
 };
 
 /** AST Destructor*/
@@ -111,19 +113,19 @@ AST::~AST()
  @post  If successful, 
  @param rhs will contain the original tree to be copied
  @return the original AST */
+
 AST AST::operator=(const AST& rhs)
 {
    //Always check for self-assignment
    if (&rhs != this){
       //Before assigning a variable to an AST, the left hand side needs to be deallocated
-      clear();
+      //clear();
       //copy the tree (the copy function takes in the root of original)
-      root_ = copy(rhs.root_);
+      //root_ = copy(rhs.root_);
    }//end if
 
    return *this;
 }//end operator=
-
 
 /** Simplify the expression
  @post  If successful, the simplify method 
@@ -136,15 +138,19 @@ AST AST::operator=(const AST& rhs)
   No harm comes to the original.
  @param v is a variable store (a map of key, value pairs)
  @return a simplified AST */
+/*
 AST AST::simplify(map<string, AST>& v) const
 {
-   //You need to retain the original form of the AST if it is stored in the variable store.
-   //That's because variable values can change. - Prof. Stiber
+   /*You need to retain the original form of the AST 
+   if it is stored in the variable store.
+   That's because variable values can change...
+   Produce a new AST that is used for output. - Prof. Stiber */
 
-   //When you simplify, therefore, you produce a new AST that is used for output. - Prof. Stiber
+/*
+   AST simplified = v;
 
    //Create a copy the AST
-   AST expression = copy(this->root_);
+   //AST expression = copy(this->root_);
 
    //perform variable substitution - may write a substitute method to help
 
@@ -153,9 +159,9 @@ AST AST::simplify(map<string, AST>& v) const
    //delete the leaves
 
    //continue until no more substitutions are possible
-
-   return expression;
+   //return expression;
 }
+*/
 
 /** Convert the expression back to infix and save it as a string
  @post  If successful, this will add parentheses 
@@ -166,16 +172,18 @@ string AST::toInfix() const
    //Create a string
    string infixExp = "";
 
+   //Pass the root of the AST to the infixHelper
+   //Pass the infixExp string too
    toInfixHelper(root_, infixExp);
 
    return infixExp;
 }
 
 /** Infix traversal of an AST
- @post  If successful, the simplify method will copy an entire tree.
+ @post  If successful, this will help the toInfix method
  @param root is the root node of the AST
  @return the pointer to current node in the AST */
-void AST::toInfixHelper(Node* root, string& infixExp)
+void AST::toInfixHelper(Node* root, string& infixExp) const
 {
 
    if (root != nullptr){
@@ -204,10 +212,10 @@ void AST::toInfixHelper(Node* root, string& infixExp)
 
 
 /** Copy the tree recursively
- @post  If successful, the simplify method will copy an entire tree.
+ @post  If successful, the copy method will copy an entire tree.
  @param root is the root node of the original tree
  @return the root node of the new AST */
-
+/*
 Node* AST::copy(Node* root)
 {
    //Return if tree is empty
@@ -224,3 +232,4 @@ Node* AST::copy(Node* root)
    //Return the pointer to the root node
    return newNode;
 }
+*/
