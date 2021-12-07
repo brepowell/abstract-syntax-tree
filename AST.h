@@ -34,17 +34,21 @@ class AST
    AST operator=(const AST& rhs);
 
    /** Simplify the expression
-    @post  If successful, the simplify method will look for any
-     variables that have already been assigned and stored as ASTs 
-     inside of the variable store. Then it will plug those values into the tree. 
-     It will need to delete nodes. The original tree is passed by constant reference
-     because this function makes a copy to simplify. No harm comes to the original.
+    @post  If successful, the simplify method 
+     will look for any variables that have already 
+     been assigned and stored as ASTs inside of the 
+     variable store. Then it will plug those values 
+     into the tree. It will need to delete nodes. 
+     The original tree is passed by constant reference
+     because this function makes a copy to simplify. 
+     No harm comes to the original.
     @param v is a variable store (a map of key, value pairs)
     @return a simplified AST */
    AST simplify(map<string, AST>& v) const;
 
    /** Convert the expression back to infix and save it as a string
-    @post  If successful, this will add parentheses to show order of operations
+    @post  If successful, this will add parentheses 
+    to show order of operations
     @return a string representation of the infix expression */
    string toInfix() const;
 

@@ -58,6 +58,7 @@ z
          //Take in one line of input
          while(eachToken.type_ != TokType::eol){
             //Take in more tokens (each one in the line)
+            //The >> will set their value_ and type_ as they are absorbed
             input >> eachToken;
             //Store the tokens from that line in order in a vector
             tokens.push_back(eachToken);
