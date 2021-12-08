@@ -5,19 +5,61 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 #include "ITokStream.h"
+#include "AST.h"
 using namespace std;
+
+/** Echoes the input to cout for the user to see
+  @param tokens the vector of tokens in infix format
+  @param assign False initially, 
+  becomes True if the := assign operator is found
+  @param variable tracks what variable will need to be assigned
+  if the assignment operator is located
+  @return the postfix vector*/
+
+/**
+vector<Token> toPostfix(vector<Token> infix, bool &assign, string& variable)
+{
+   //new vector to hold the tokens
+   vector<Tokens> postfixTokens;
+   //find errors
+   /*
+   input of two operands with no operator in between: 5x
+   input of one operand next to a parentheses with no operator in between: 7(
+   input of two operators next to each other: //
+   input of a variable to the right of an exponent operator: ^y
+   input of a negative integer (with a minus sign): -1 + x
+   input of an operators in prefix form (operators appearing before operands): + 7 * 6 8
+   input of a number larger than 2147483647 (cannot fit inside an int)
+   missing closing parenthesis: a * (b + c
+   invalid chars, like & or %
+
+   */
+
+/*
+   return postfixTokens;
+}
+*/
 
 /** Echoes the input to cout for the user to see
   @param tokens the vector of tokens of one line
   @param lineCount the number of input lines so far */
-void echo(vector<Token> tokens, int lineCount)
+void echo(vector<Token> tokens, int lineCount, bool isInput)
 {
-   cout << "in  [" << lineCount << "]: ";
+   if (isInput){
+      cout << "in  [" << lineCount << "]: ";
+   }else{
+      cout << "out [" << lineCount << "]: ";
+   }
+
    //Output the value of each token in the vector
    for(Token i : tokens){
       cout << i.value_;
-   }
+   }//end for
+   
+   cout << endl;
+
 }//end echo
 
 /** MAIN */
@@ -41,45 +83,76 @@ z
    int lineCount = 0;
    //Create an ITokStream object that takes in cin
    ITokStream input(cin);
+
    //Create a token
    Token eachToken;
+   //COULD THIS BE TURNED INTO A POINTER, AND USED TO CREATE NEW TOKENS IN THE LOOP?
+
    //A vector to store tokens
-   vector<Token> tokens;
+   vector<Token> infixTokens;
+   
+   //Take in one token (the first token in a line)
+   //input >> eachToken;
 
    //Until the end token is reached
+   //MAYBE - TRY MAKING THIS A WHILE LOOP? - QSC
    do {
+
+      //A map to store ASTs
+      map<string, AST> variableStore;
+      
       //Take in one token (the first token in a line)
       input >> eachToken;
-      
+      //Now the value_ and the type_ have been set for the token
+
       //Make sure the token is NOT an end of line or end token
       if(eachToken.type_ != TokType::eol && eachToken.type_ != TokType::end){
          //Take in one line of input
          while(eachToken.type_ != TokType::eol){
+            //Store the tokens from that line in order in a vector
+            infixTokens.push_back(eachToken);
             //Take in more tokens (each one in the line)
             //The >> will set their value_ and type_ as they are absorbed
-            input >> eachToken;
-            //Store the tokens from that line in order in a vector
-            tokens.push_back(eachToken);
+            input >> eachToken; //THIS MUST BE WHERE THE ERROR IS HAPPENING!
          }//end inner while - stop taking a line when eol is reached    
       }//end if
       
       //The eol token has been reached
       if (eachToken.type_ == TokType::eol){   
          //If the tokens vector is not empty, echo it
-         if(!tokens.empty() && tokens[0].type_ != TokType::end){
+         if(!infixTokens.empty() && infixTokens[0].type_ != TokType::end){
             lineCount++; //Increase line count
-            echo(tokens, lineCount); //echo the line
+            
+            bool isInput = true;
+            echo(infixTokens, lineCount, isInput); //echo the input
+            
+            //bool assign = false; //will check for assign tokens
+            //string = variable;
+
+            //convert to postfix
+            //vector<Tokens> postfixTokens = toPostfix(infixTokens, assign, variable); 
+
+            //AST tree(postfixTokens); //make an abstract syntax tree
+            /*
+            if (assign){
+               //if there was assignment, store the AST
+               //using "variable" as the key
+               store(variableStorage, tree, variable);
+            }
+            */ 
+            //isInput = false; //now display the output
+            //echo(infixTokens, lineCount, isInput); //echo the output
+
          }//end if
          //Else, the line was blank - don't echo a blank line
       }//end else
       
-      tokens.clear();
-      //cerr << "tokens was cleared" << endl;
+      infixTokens.clear();
    }
    while(eachToken.type_ != TokType::end);//end do - stop taking all input
    
-   tokens.clear();
-   cerr << "tokens are cleared again" << endl;
+   //tokens.clear();
+   //cerr << "tokens are cleared again" << endl;
    
 }//end main
 

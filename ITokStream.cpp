@@ -26,6 +26,7 @@ ITokStream& ITokStream::operator>>(Token& rhs)
    //For the token object,
    //set type_ (TokType)
    //set value_ (string)
+   rhs.value_ = "";
 
    //End signals
    if (is_.peek() == '.'){
@@ -48,10 +49,10 @@ ITokStream& ITokStream::operator>>(Token& rhs)
       rhs.value_ += is_.get();
       if(is_.peek() == '='){
          rhs.value_ += is_.get();
-         rhs.type_ = TokType::assign; //assign
+         rhs.type_ = TokType::assign; //assign :=
       }else{
          //ERROR - not an assignment operator
-      }
+      }//end if/else
    }else if (is_.peek() == '^' ){
       rhs.value_ += is_.get();
       rhs.type_ = TokType::powop; //powop
@@ -79,15 +80,16 @@ ITokStream& ITokStream::operator>>(Token& rhs)
 
    //Operands
    }else if (isdigit(is_.peek())){
+      //get the first number in the istream
       rhs.value_ += is_.get();
-      // loop to get double digit (or longer) numbers 
+      rhs.type_ = TokType::number; //number
+      //loop to get double digit (or longer) numbers 
       while (isdigit(is_.peek())){
          rhs.value_ += is_.get(); //continue to add digits onto value_
          //THROW AN ERROR - if the string is longer than an int can hold
       }//end while
-      rhs.type_ = TokType::number; //number
       //cerr << "Got a number" << endl; //test
-      cerr << "number is " << rhs.value_ << endl;
+      //cerr << "number is " << rhs.value_ << endl;
    }else if (isalpha(is_.peek())){
       rhs.value_ += is_.get();
       rhs.type_ = TokType::variable; //variable
