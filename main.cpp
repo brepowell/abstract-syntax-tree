@@ -6,24 +6,170 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <stack>
+#include <queue>
 #include "ITokStream.h"
 #include "AST.h"
 using namespace std;
 
-/** Echoes the input to cout for the user to see
-  @param tokens the vector of tokens in infix format
-  @param assign False initially, 
-  becomes True if the := assign operator is found
+
+/**
+ * @brief Checks the vector/expression for parentheses
+ * Makes sure the parentheses match.
+ * @param infix the vector of tokens in infix format
+ * @return true if infix vector had matching parens
+ * @return false if infix vector has an error
+ */
+bool checkBalancedParens(vector<Token> infix, bool &hasParens)
+{
+   stack<Token> TokenStack;
+   bool balancedSoFar = true;
+   int i = 0; //Tracks position in vector
+   while (balancedSoFar && i < infix.size())
+   {
+      Token token = infix[i];
+      i++;
+      // Push an open lparen
+      if (token.type_ == TokType::lparen){
+         TokenStack.push(token);
+         hasParens = true;
+      // Find a close rparen 
+      }else if (token.type_ == TokType::rparen){
+         if (!TokenStack.empty())
+            TokenStack.pop();   // Pop a matching lparen
+         else              // No matching lparen
+            balancedSoFar = false;
+      }
+      // Ignore all characters other than braces
+   }
+   if (balancedSoFar && TokenStack.empty())
+      return true;
+   else
+      return false;
+}
+
+/** Converts to postfix
+  @brief Converts an infix expression to a postfix expression
+  @param infix the vector of tokens in infix format
+  @param assign False initially, becomes True if 
+  the := assign operator is found
   @param variable tracks what variable will need to be assigned
   if the assignment operator is located
   @return the postfix vector*/
-
-/**
-vector<Token> toPostfix(vector<Token> infix, bool &assign, string& variable)
+vector<Token> toPostfix(const vector<Token> &infixTokens, 
+   bool foundError, bool &assign, char &var)
 {
-   //new vector to hold the tokens
-   vector<Tokens> postfixTokens;
-   //find errors
+   //Index i for traversing the infix vector
+   int i = 0; 
+   //check for the assignment operator
+   if(infixTokens[0].type_ == TokType::variable && 
+      infixTokens[1].value_ == " " &&
+      infixTokens[2].type_ == TokType::assign){
+      assign = true;
+      var = tolower(infixTokens[0].value_[0]);
+      i += 3;//move i to the first token after :=
+   }//end if
+
+   //Contain the operators and the postfix expression
+   vector<Token> postfixExp;
+   stack<Token> operators;
+
+   //Loop through the infix expression.
+   //If there are errors, stop.
+   while (i < infixTokens.size() && !foundError){
+      
+      //Look for invalid tokens:
+      if(infixTokens[i].type_ == TokType::null &&
+        infixTokens[i].value_ != " "){
+           //ERROR - THIS IN NOT A VALID TOKEN
+           foundError = true;
+
+      //Skip spaces:
+      }else if (infixTokens[i].type_ == TokType::null){
+         i++;
+      
+      //Look for operands (numbers or variables):
+      }else if (infixTokens[i].type_ == TokType::number ||
+         infixTokens[i].type_ == TokType::variable){
+         //Add them to the postfix expression
+         postfixExp.push_back(infixTokens[i]);
+         i++;
+
+      //Look for operators
+      }else if(infixTokens[i].type_ == TokType::addop ||
+         infixTokens[i].type_ == TokType::mulop ||
+         infixTokens[i].type_ == TokType::powop){
+
+         //Check the current operators stack (make sure it is not empty)
+         while(!operators.empty()){
+            //If the stack of operators is not empty...
+               //While the top operator in the stack is not a left parentheses,
+               //and either the top operator in the stack 
+               //has a higher precedence than the current operator
+               //OR the top operator in the stack and the current operator have
+               //equal precedence and the current operator 
+               //is not a power operator
+            while(operators.top().type_ != TokType::lparen &&
+               (operators.top().type_ > infixTokens[i].type_ ||
+               infixTokens[i].type_ == operators.top().type_ &&
+               infixTokens[i].type_ != TokType::powop)){
+               //add the higher operator to the postfix expression
+               postfixExp.push_back(operators.top());
+               operators.pop();//remove the top from the stack
+            }//end inner while
+
+         }//end outer while -- the stack is empty
+         //add the current operator to the operators stack
+         operators.push(infixTokens[i]);
+
+      //Check for parentheses
+      }else if (infixTokens[i].type_ == TokType::lparen){
+         operators.push(infixTokens[i]);
+      }else if (infixTokens[i].type_ == TokType::rparen){
+         if(!operators.empty()){
+            //Keep taking operators off of the operator stack
+            //until a left parenthesis is reached or the end
+            //of the vector is reached (Error - no matching paren)
+            while(operators.top().type_ != TokType::lparen && 
+               !operators.empty() && !foundError){
+               //place the operators into the postfix expression
+               postfixExp.push_back(operators.top());
+               operators.pop();//remove the top from the stack
+            }//while stops when a left parenthesis is reached or stack is empty
+
+            //Check whether or not the last operator in the stack is an lparen
+            if (operators.top().type_ == TokType::lparen){
+               operators.pop();//take the left parenthesis off.
+               if(!operators.empty()){
+                  //After finding the lparen, move the operator at the top
+                  //of the stack to the postfix expression
+                  postfixExp.push_back(operators.top());
+                  operators.pop();//remove the top from the stack
+               }
+            //The stack is empty and no match was found
+            }else{
+               //ERROR - no matching parenthesis found
+               foundError = true;
+            }//end nested if/else
+         }//end if -- the operator stack is empty
+      }//end outer if -- handled parentheses
+      i++;
+   }//end while -- looped through the end of the infix expression
+
+   //Check if there are any operators remaining in the stack
+   while (!operators.empty()){
+      //If a left parenthesis "(" remains, then it did not have a match
+      if(operators.top().type_ == TokType::lparen){
+         foundError = true;
+      }else{
+         //add remaining operators to the postfix expression
+         postfixExp.push_back(operators.top());
+         operators.pop();//remove the top from the stack 
+      }
+   }//end while
+   
+   //The postfix expression should be complete
+
    /*
    input of two operands with no operator in between: 5x
    input of one operand next to a parentheses with no operator in between: 7(
@@ -32,15 +178,12 @@ vector<Token> toPostfix(vector<Token> infix, bool &assign, string& variable)
    input of a negative integer (with a minus sign): -1 + x
    input of an operators in prefix form (operators appearing before operands): + 7 * 6 8
    input of a number larger than 2147483647 (cannot fit inside an int)
-   missing closing parenthesis: a * (b + c
    invalid chars, like & or %
-
    */
 
-/*
-   return postfixTokens;
+   return postfixExp;
 }
-*/
+
 
 /** Echoes the input to cout for the user to see
   @param tokens the vector of tokens of one line
@@ -81,57 +224,68 @@ z
 
    //The count of the number of lines so far (for echoing):
    int lineCount = 0;
+
    //Create an ITokStream object that takes in cin
    ITokStream input(cin);
 
    //Create a token
    Token eachToken;
-   //COULD THIS BE TURNED INTO A POINTER, AND USED TO CREATE NEW TOKENS IN THE LOOP?
 
-   //A vector to store tokens
+   //A vector to store tokens 
+   //(Note: the push_back function makes copies of each token)
    vector<Token> infixTokens;
    
-   //Take in one token (the first token in a line)
-   //input >> eachToken;
-
-   //Until the end token is reached
-   //MAYBE - TRY MAKING THIS A WHILE LOOP? - QSC
+   //Until the end token is reached, collect tokens
    do {
-
       //A map to store ASTs
-      map<string, AST> variableStore;
+      map<char, AST> variableStore;
       
-      //Take in one token (the first token in a line)
+      //Take in the first token
       input >> eachToken;
-      //Now the value_ and the type_ have been set for the token
+      //The >> will set the value_ and type_ 
+      //of the token as each token is absorbed
 
       //Make sure the token is NOT an end of line or end token
       if(eachToken.type_ != TokType::eol && eachToken.type_ != TokType::end){
+         
          //Take in one line of input
+         //Check to see if the end of the line is reached
          while(eachToken.type_ != TokType::eol){
-            //Store the tokens from that line in order in a vector
+            //Store the previous token in the vector
             infixTokens.push_back(eachToken);
-            //Take in more tokens (each one in the line)
-            //The >> will set their value_ and type_ as they are absorbed
-            input >> eachToken; //THIS MUST BE WHERE THE ERROR IS HAPPENING!
+            //Get and set the next token
+            input >> eachToken;
          }//end inner while - stop taking a line when eol is reached    
       }//end if
       
       //The eol token has been reached
       if (eachToken.type_ == TokType::eol){   
-         //If the tokens vector is not empty, echo it
+         //If the tokens vector is not empty, perform these steps
+         //for each line of input that contains an expression
          if(!infixTokens.empty() && infixTokens[0].type_ != TokType::end){
             lineCount++; //Increase line count
             
+            //isInput allows the echo to work for input or output
             bool isInput = true;
-            echo(infixTokens, lineCount, isInput); //echo the input
-            
-            //bool assign = false; //will check for assign tokens
-            //string = variable;
+
+            //Errors should be caught before echoing the input
+            //Errors will be caught in the conversion to postfix:
+            bool hasErrors = false; //will check for errors
+            bool assign = false; //will check for assign tokens
+            char var = '\0'; //The key for variable store structure
 
             //convert to postfix
-            //vector<Tokens> postfixTokens = toPostfix(infixTokens, assign, variable); 
+            vector<Token> postfixTokens = 
+            toPostfix(infixTokens, hasErrors, assign, var); 
 
+            //Now echo the original output, if no errors
+            
+            if(!hasErrors){
+               echo(infixTokens, lineCount, isInput); //echo the input
+               cout << "TEST OF POSTFIX" << endl;
+               echo(postfixTokens, lineCount, isInput); //TEST OF POSTFIX
+            };
+            
             //AST tree(postfixTokens); //make an abstract syntax tree
             /*
             if (assign){
@@ -151,8 +305,6 @@ z
    }
    while(eachToken.type_ != TokType::end);//end do - stop taking all input
    
-   //tokens.clear();
-   //cerr << "tokens are cleared again" << endl;
    
 }//end main
 
