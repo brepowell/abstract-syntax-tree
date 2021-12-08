@@ -67,6 +67,7 @@ vector<Token> toPostfix(const vector<Token> &infixTokens,
       infixTokens[2].type_ == TokType::assign){
       assign = true;
       var = tolower(infixTokens[0].value_[0]);
+      cerr << "Found an assignment operator" << endl;
       i += 3;//move i to the first token after :=
    }//end if
 
@@ -82,18 +83,19 @@ vector<Token> toPostfix(const vector<Token> &infixTokens,
       if(infixTokens[i].type_ == TokType::null &&
         infixTokens[i].value_ != " "){
            //ERROR - THIS IN NOT A VALID TOKEN
+           cerr << "error" << endl;
            foundError = true;
 
       //Skip spaces:
-      }else if (infixTokens[i].type_ == TokType::null){
-         i++;
+      //}else if (infixTokens[i].type_ == TokType::null){
+         //i++;
       
       //Look for operands (numbers or variables):
       }else if (infixTokens[i].type_ == TokType::number ||
          infixTokens[i].type_ == TokType::variable){
          //Add them to the postfix expression
          postfixExp.push_back(infixTokens[i]);
-         i++;
+         //i++;
 
       //Look for operators
       }else if(infixTokens[i].type_ == TokType::addop ||
@@ -101,7 +103,6 @@ vector<Token> toPostfix(const vector<Token> &infixTokens,
          infixTokens[i].type_ == TokType::powop){
 
          //Check the current operators stack (make sure it is not empty)
-         while(!operators.empty()){
             //If the stack of operators is not empty...
                //While the top operator in the stack is not a left parentheses,
                //and either the top operator in the stack 
@@ -109,7 +110,9 @@ vector<Token> toPostfix(const vector<Token> &infixTokens,
                //OR the top operator in the stack and the current operator have
                //equal precedence and the current operator 
                //is not a power operator
-            while(operators.top().type_ != TokType::lparen &&
+               //SEGMENTATION FAULT WAS HERE!
+            while(!operators.empty() &&
+               operators.top().type_ != TokType::lparen &&
                (operators.top().type_ > infixTokens[i].type_ ||
                infixTokens[i].type_ == operators.top().type_ &&
                infixTokens[i].type_ != TokType::powop)){
@@ -118,7 +121,6 @@ vector<Token> toPostfix(const vector<Token> &infixTokens,
                operators.pop();//remove the top from the stack
             }//end inner while
 
-         }//end outer while -- the stack is empty
          //add the current operator to the operators stack
          operators.push(infixTokens[i]);
 
@@ -213,6 +215,11 @@ int main(int argc, char const *argv[])
 
 //Sample input to test:
 /*
+3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3
+
+should be 3 4 2 * 1 5 − 2 3 ^ ^ / +
+OR MAYBE 342*15-/23^^+ ????
+
 5 + 7
 x := 1
 x + 8
@@ -284,6 +291,7 @@ z
                echo(infixTokens, lineCount, isInput); //echo the input
                cout << "TEST OF POSTFIX" << endl;
                echo(postfixTokens, lineCount, isInput); //TEST OF POSTFIX
+               cout << endl;
             };
             
             //AST tree(postfixTokens); //make an abstract syntax tree

@@ -100,13 +100,15 @@ AST::AST(vector<Token>& postfixExpr)
 AST::AST(const AST& original)
 {
    //copy returns a pointer to the new root
-   //root_ = copy(original.root_);
+   root_ = copy(original.root_);
 };
 
 /** AST Destructor*/
 AST::~AST()
 {
 //Write a clear or delete node function
+//CLEAR SHOULD GO POSTORDER
+
 };
 
 /** Assignment operator overload
@@ -215,8 +217,8 @@ void AST::toInfixHelper(Node* root, string& infixExp) const
  @post  If successful, the copy method will copy an entire tree.
  @param root is the root node of the original tree
  @return the root node of the new AST */
-/*
-Node* AST::copy(Node* root)
+
+AST::Node* AST::copy(Node* root)
 {
    //Return if tree is empty
    if(root == nullptr)
@@ -232,4 +234,3 @@ Node* AST::copy(Node* root)
    //Return the pointer to the root node
    return newNode;
 }
-*/
