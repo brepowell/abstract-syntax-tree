@@ -10,17 +10,30 @@
 #include <vector>
 #include <queue>
 #include <stack>
+#include <sstream>
 #include "AST.h"
 #include "ITokStream.h" //for Tokens
 using namespace std;
 
-/*When the expression was tokenized and converted to a postfix vector, 
+/* This class will create an Abstract Syntax Tree object.
+   Notes:
+   When the expression was tokenized and converted to a postfix vector, 
    some tokens were not stored in the vector, such as 
    null, assign, lparen, rparen, eol, and end.
    Precedence was already considered in the conversion to postfix.
-   This constructor just needs to build the AST from the vector provided.*/
+   The constructor just needs to build the AST from the vector provided.
+   There needs to be a substitute method and a simplify method to
+   perform the act of combining nodes and solving the expression.
+   There also needs to be an infix method that converts the final
+   expression to infix again.
+   */
 
-/** AST Constructor 
+/**
+ * @brief Construct a new AST::AST object */
+AST::AST()
+   : root_(nullptr){}
+
+/** AST Parameterized Constructor 
  @post This will construct an AST from the leaves up
  @param postfixExpr is a vector of tokens 
    ordered as a postfix expression */
@@ -106,24 +119,23 @@ AST::AST(const AST& original)
 /** AST Destructor*/
 AST::~AST()
 {
-//Write a clear or delete node function
-//CLEAR SHOULD GO POSTORDER
-
+   //Goes in postorder to delete all nodes
+   clear(root_);
 };
 
 /** Assignment operator overload
  @post  If successful, 
  @param rhs will contain the original tree to be copied
  @return the original AST */
-
 AST AST::operator=(const AST& rhs)
 {
    //Always check for self-assignment
    if (&rhs != this){
-      //Before assigning a variable to an AST, the left hand side needs to be deallocated
-      //clear();
+      //Before assigning a variable to an AST, 
+      //the left hand side needs to be deallocated
+      clear(root_);
       //copy the tree (the copy function takes in the root of original)
-      //root_ = copy(rhs.root_);
+      root_ = copy(rhs.root_);
    }//end if
 
    return *this;
@@ -140,30 +152,146 @@ AST AST::operator=(const AST& rhs)
   No harm comes to the original.
  @param v is a variable store (a map of key, value pairs)
  @return a simplified AST */
-/*
-AST AST::simplify(map<string, AST>& v) const
+AST AST::simplify(map<char, AST>& v) const
 {
    /*You need to retain the original form of the AST 
    if it is stored in the variable store.
    That's because variable values can change...
    Produce a new AST that is used for output. - Prof. Stiber */
 
-/*
-   AST simplified = v;
+   //Make a vector - postfix vector (pass it to substitute)
+   vector<Token> postFixForSimplifying;
 
-   //Create a copy the AST
-   //AST expression = copy(this->root_);
+   //Call substitute to make sure each variable is replaced
+   //This will recursively call itself until
+   //no more substitutions are possible.
+   substitute(root_, v, postFixForSimplifying);
 
-   //perform variable substitution - may write a substitute method to help
+   //Create an AST from that postfix vector
+   AST expression(postFixForSimplifying);
+   
+   //Call simplestForm to do the math
+   //and simplify the whole AST to the simplest form.
+   simplestForm(expression.root_);
 
-   //If an operator has two numbers as operands,
-   //replace the parent of that subtree with the result
-   //delete the leaves
-
-   //continue until no more substitutions are possible
-   //return expression;
+   //The AST has been simplified as much as possible.
+   return expression;
 }
-*/
+
+
+/**
+ * @brief Substitute will find all of the variables
+ * in variable store that have already been assigned
+ * by the user. These variables need to be replaced by
+ * the AST that is in the variable store.
+ * (This could be a single node, like x := 1, or
+ * it could be another subexpression, like a := z + y)
+ * @param root passes the root of the AST to simplify
+ * @param v the variable storage (stored the ASTs)
+ * @param postfixTokens will store the nodes for the
+ * simplification in postfix order
+ */
+void AST::substitute(Node* root, map<char, AST>& v,
+   vector<Token>& postfixTokens)
+{
+   //Convert the AST back into postfix for ease of substitution
+   //Traverse in postorder and add to postfix vector.
+   substituteHelper(root_, postfixTokens);
+
+   //For each token in the vector, check if it needs to be subsituted
+   for(Token i : postfixTokens){
+
+      //Look for variables, skip numbers and operators
+      if(i.type_ == TokType::variable){
+         
+         //The search key for the variable store 
+         //is the value of the token i.
+         char key = i.value_[0];
+         map<char,AST>::iterator it;
+         it = v.find(key);
+      
+         //If the node's value exists as a variable in storage
+         if (it != v.end()){
+            //Call the substitute helper again for whatever
+            //AST might be stored using this key
+            vector<Token> itemInVariable;
+            substituteHelper(it->second.root_, itemInVariable);
+            
+         }
+      }//end if
+   }//end for
+}//end substitute
+
+/** Substitute Helper
+ * @brief Helps substitute by traversing in postorder
+ * and adding the tokens in postfix order
+ * @param root the root node of the AST
+ * @param postfixTokens the vector to store the tokens
+ */
+void AST::substituteHelper(Node* root, vector<Token> &postfixTokens)
+{
+   substituteHelper(root->left_, postfixTokens);
+   substituteHelper(root->right_, postfixTokens);
+   postfixTokens.push_back(root->tok_); //add tokens to the vector
+}
+
+/** Simplest Form - simplifies as much as possible
+ * @brief This will take an AST and simplify
+ * all subexpressions until the final expression is
+ * in its simplest form
+ * @param root the current node of the AST
+ */
+void AST::simplestForm(Node* root)
+{
+
+   simplestForm(root->left_);
+   simplestForm(root->right_);
+
+   //addop, mulop, powop, variable, number
+   //Look for nodes where there is an operator
+   //as the parent node and 2 numbers for children
+   if (root->tok_.type_ != TokType::number &&
+      root->left_ != nullptr &&
+      root->right_ != nullptr && 
+      root->left_->tok_.type_ == TokType::number &&
+      root->right_->tok_.type_ == TokType::number){
+      
+      //Store the values from the nodes in a subtree
+      //always put the left value into the result first
+      int result = stoi(root->left_->tok_.value_);
+      int operand2 = stoi(root->right_->tok_.value_);
+
+      if (root->tok_.type_ == TokType::addop){
+         //Add numbers
+         if(root->tok_.value_ == "+"){
+            result += operand2;
+         }else if(root->tok_.value_ == "-"){
+            result -= operand2;
+         }//end inner if/else  
+      }else if (root->tok_.type_ == TokType::mulop){
+         if(root->tok_.value_ == "*"){
+            result *= operand2;
+         }else if(root->tok_.value_ == "/"){
+            result /= operand2;
+         }  
+      }else if (root->tok_.type_ == TokType::powop){
+         result /= operand2;
+      }//end else-if statements
+
+      //Replace the parent node with the result
+      //Change the parent node's value
+      root->tok_.value_ = to_string(result);
+      
+      //Change the parent node's type
+      root->tok_.type_ = TokType::number;
+      
+      //Delete the child nodes
+      delete root->left_;
+      delete root->right_;
+      root->left_ = nullptr;
+      root->right_ = nullptr;
+   }//end if - the parent node has been replaced with a number
+}//end simplestForm
 
 /** Convert the expression back to infix and save it as a string
  @post  If successful, this will add parentheses 
@@ -212,19 +340,17 @@ void AST::toInfixHelper(Node* root, string& infixExp) const
 
 }//end toInfixHelper
 
-
 /** Copy the tree recursively
  @post  If successful, the copy method will copy an entire tree.
  @param root is the root node of the original tree
  @return the root node of the new AST */
-
 AST::Node* AST::copy(Node* root)
 {
    //Return if tree is empty
    if(root == nullptr)
       return nullptr;
    
-   //Copy the root node first
+   //Copy the root node first - preorder traversal
    Node* newNode = new Node(root->tok_);
    
    //Use recursion to copy the left and right subtrees
@@ -233,4 +359,17 @@ AST::Node* AST::copy(Node* root)
 
    //Return the pointer to the root node
    return newNode;
+}
+
+/** Clear
+ * @brief Empties an AST by deleting all nodes
+ * and nulling all pointers
+ * @param root the pointer to the root node for the tree*/
+void AST::clear(Node* root){
+   clear(root);
+   clear(root);
+   root->left_ = nullptr;
+   root->right_ = nullptr;
+   delete root;
+   root = nullptr;
 }

@@ -14,11 +14,15 @@ using namespace std;
 
 class AST
 {
-
    public:
-   /** AST Constructor 
-    @post This will construct an AST from the leaves up
-    @param postfixExpr is a vector of tokens 
+
+   /**
+    @brief Construct a new AST::AST object */
+   AST();
+
+   /**
+    * @brief This will construct an AST from the leaves up
+      @param postfixExpr is a vector of tokens 
       ordered as a postfix expression */
    explicit AST(vector<Token>& postfixExpr);
 
@@ -45,7 +49,7 @@ class AST
      No harm comes to the original.
     @param v is a variable store (a map of key, value pairs)
     @return a simplified AST */
-   AST simplify(map<string, AST>& v) const;
+   AST simplify(map<char, AST>& v) const;
 
    /** Convert the expression back to infix and save it as a string
     @post  If successful, this will add parentheses 
@@ -79,7 +83,42 @@ class AST
     @post  If successful, the copy method will copy an entire tree.
     @param root is the root node of the original tree
     @return the root node of the new AST */
-   Node* copy(Node* root);
+   AST::Node* copy(Node* root);
+
+   /**
+   * @brief Substitute will find all of the variables
+   * in variable store that have already been assigned
+   * by the user. These variables need to be replaced by
+   * the AST that is in the variable store.
+   * (This could be a single node, like x := 1, or
+   * it could be another subexpression, like a := z + y)
+   * @param root passes the root of the AST to simplify
+   * @param v the variable storage (stored the ASTs)
+   */
+   void substitute(Node* root, map<char, AST>& v,
+   vector<Token>& postfixTokens);
+
+   /**
+   * @brief Helps substitute by traversing in postorder
+   * and adding the tokens in postfix order
+   * @param root the root node of the AST
+   * @param postfixTokens the vector to store the tokens
+   */
+   void substituteHelper(Node* root, vector<Token> &postfixTokens);
+
+   /**
+   * @brief This will take an AST and simplify
+   * all subexpressions until the final expression is
+   * in its simplest form
+   * @param root the current node of the AST
+   */
+   void simplestForm(Node* root);
+
+   /**
+   * @brief Empties an AST by deleting all nodes
+   * and nulling all pointers
+   * @param root the pointer to the root node for the tree*/
+   void clear(Node* root);
 
    //Pointer to the root node of the AST, which points to its children
    Node* root_;

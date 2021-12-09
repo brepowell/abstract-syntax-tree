@@ -12,42 +12,6 @@
 #include "AST.h"
 using namespace std;
 
-
-/**
- * @brief Checks the vector/expression for parentheses
- * Makes sure the parentheses match.
- * @param infix the vector of tokens in infix format
- * @return true if infix vector had matching parens
- * @return false if infix vector has an error
- */
-bool checkBalancedParens(vector<Token> infix, bool &hasParens)
-{
-   stack<Token> TokenStack;
-   bool balancedSoFar = true;
-   int i = 0; //Tracks position in vector
-   while (balancedSoFar && i < infix.size())
-   {
-      Token token = infix[i];
-      i++;
-      // Push an open lparen
-      if (token.type_ == TokType::lparen){
-         TokenStack.push(token);
-         hasParens = true;
-      // Find a close rparen 
-      }else if (token.type_ == TokType::rparen){
-         if (!TokenStack.empty())
-            TokenStack.pop();   // Pop a matching lparen
-         else              // No matching lparen
-            balancedSoFar = false;
-      }
-      // Ignore all characters other than braces
-   }
-   if (balancedSoFar && TokenStack.empty())
-      return true;
-   else
-      return false;
-}
-
 /** Converts to postfix
   @brief Converts an infix expression to a postfix expression
   @param infix the vector of tokens in infix format
@@ -67,7 +31,7 @@ vector<Token> toPostfix(const vector<Token> &infixTokens,
       infixTokens[2].type_ == TokType::assign){
       assign = true;
       var = tolower(infixTokens[0].value_[0]);
-      cerr << "Found an assignment operator" << endl;
+      //cerr << "Found an assignment operator" << endl; //test
       i += 3;//move i to the first token after :=
    }//end if
 
@@ -110,7 +74,6 @@ vector<Token> toPostfix(const vector<Token> &infixTokens,
                //OR the top operator in the stack and the current operator have
                //equal precedence and the current operator 
                //is not a power operator
-               //SEGMENTATION FAULT WAS HERE!
             while(!operators.empty() &&
                operators.top().type_ != TokType::lparen &&
                (operators.top().type_ > infixTokens[i].type_ ||
@@ -172,13 +135,14 @@ vector<Token> toPostfix(const vector<Token> &infixTokens,
    
    //The postfix expression should be complete
 
-   /*
+   /* SOME ERRORS THAT NEED TO BE CAUGHT:
    input of two operands with no operator in between: 5x
    input of one operand next to a parentheses with no operator in between: 7(
    input of two operators next to each other: //
    input of a variable to the right of an exponent operator: ^y
    input of a negative integer (with a minus sign): -1 + x
-   input of an operators in prefix form (operators appearing before operands): + 7 * 6 8
+   input of an operators in prefix form 
+      (operators appearing before operands): + 7 * 6 8
    input of a number larger than 2147483647 (cannot fit inside an int)
    invalid chars, like & or %
    */
@@ -186,17 +150,33 @@ vector<Token> toPostfix(const vector<Token> &infixTokens,
    return postfixExp;
 }
 
+/**
+ * @brief Will store the ASTs that are assigned to variables
+ * @param variableStore the map for storage
+ * @param tree the AST that needs to be stored
+ * @param variable the key for the map
+ */
+void store(map<char, AST> variableStore, const AST &tree, char key)
+{
+   //Check to see if the var exists in the storage
+   map<char,AST>::iterator it;
+   it = variableStore.find(key);
+      
+   //If the node's value exists as a variable in storage
+   if (it != variableStore.end()){
+      //Emplace only inserts the AST if the container has a key already
+      variableStore.emplace(key, tree);  
+   }else{
+      variableStore.insert(pair<char, AST>(key, tree));
+   }
+}
 
 /** Echoes the input to cout for the user to see
   @param tokens the vector of tokens of one line
   @param lineCount the number of input lines so far */
-void echo(vector<Token> tokens, int lineCount, bool isInput)
+void echo(vector<Token> tokens, int lineCount)
 {
-   if (isInput){
-      cout << "in  [" << lineCount << "]: ";
-   }else{
-      cout << "out [" << lineCount << "]: ";
-   }
+   cout << "in  [" << lineCount << "]: ";
 
    //Output the value of each token in the vector
    for(Token i : tokens){
@@ -241,12 +221,12 @@ z
    //A vector to store tokens 
    //(Note: the push_back function makes copies of each token)
    vector<Token> infixTokens;
+
+   //A map to store ASTs
+   map<char, AST> variableStore;
    
    //Until the end token is reached, collect tokens
-   do {
-      //A map to store ASTs
-      map<char, AST> variableStore;
-      
+   do {   
       //Take in the first token
       input >> eachToken;
       //The >> will set the value_ and type_ 
@@ -271,9 +251,6 @@ z
          //for each line of input that contains an expression
          if(!infixTokens.empty() && infixTokens[0].type_ != TokType::end){
             lineCount++; //Increase line count
-            
-            //isInput allows the echo to work for input or output
-            bool isInput = true;
 
             //Errors should be caught before echoing the input
             //Errors will be caught in the conversion to postfix:
@@ -286,25 +263,33 @@ z
             toPostfix(infixTokens, hasErrors, assign, var); 
 
             //Now echo the original output, if no errors
-            
             if(!hasErrors){
-               echo(infixTokens, lineCount, isInput); //echo the input
-               cout << "TEST OF POSTFIX" << endl;
-               echo(postfixTokens, lineCount, isInput); //TEST OF POSTFIX
-               cout << endl;
-            };
-            
-            //AST tree(postfixTokens); //make an abstract syntax tree
-            /*
-            if (assign){
-               //if there was assignment, store the AST
-               //using "variable" as the key
-               store(variableStorage, tree, variable);
+               echo(infixTokens, lineCount); //echo the input
+               //cout << "TEST OF POSTFIX" << endl;
+               //echo(postfixTokens, lineCount); //TEST OF POSTFIX
+            }else{
+               //HANDLE ERRORS
+               continue; //skip other steps and output an error
             }
-            */ 
-            //isInput = false; //now display the output
-            //echo(infixTokens, lineCount, isInput); //echo the output
+            
+            //Make an abstract syntax tree
+            AST tree(postfixTokens); 
+            //If the assignment operator was present, store that AST
+            if (assign){
+               //using "var" as the key
+               store(variableStore, tree, var);
+            }
+            
+            //Create a copy the AST
+            AST expression(tree);
 
+            //Simplify the AST expression
+            expression.simplify(variableStore);
+
+            //Print the new infix expression:
+            cout << "out [" << lineCount << "]: ";
+            cout << tree.toInfix() << endl;
+            
          }//end if
          //Else, the line was blank - don't echo a blank line
       }//end else
@@ -312,29 +297,9 @@ z
       infixTokens.clear();
    }
    while(eachToken.type_ != TokType::end);//end do - stop taking all input
-   
-   
+
+   //Empty the storage that holds all of the assigned ASTs
+   variableStore.clear();
+
+
 }//end main
-
-   /** TESTS COMPLETED */
-
-/*
-   //Create an ITokStream object that takes in cin
-   ITokStream input(cin);
-   
-   //Create a token
-   Token eachToken;
-
-   //Take in one token (the first token in a line)
-   input >> eachToken;
-
-   //Test the TokType setting - SUCCESSFUL WITH ALL TESTS!
-   cout << "value: " << eachToken.value_ <<endl;
-
-   //null, addop, mulop, powop, variable, number, lparen, rparen, assign, eol, end 
-   if(eachToken.type_ == TokType::eol){
-      cout << "true" <<endl;
-   }else{
-      cout << "false" <<endl;
-   }//end if-else
-*/
