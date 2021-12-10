@@ -195,17 +195,13 @@ int main(int argc, char const *argv[])
 
 //Sample input to test:
 /*
-3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3
 
-should be 3 4 2 * 1 5 − 2 3 ^ ^ / +
-OR MAYBE 342*15-/23^^+ ????
-
-5 + 7    //SOLVE IS NOT WORKING
-x := 1
-x + 8
-z := x + y
-y := 8
-z
+5 + 7        //returns 12
+x := 1       //returns 1
+x + 8        //returns (x + 8)
+z := x + y   //returns (x + y)
+y := 8       //returns 8
+z            //SEGEMTATION FAULT
 .
 */
 
@@ -281,10 +277,11 @@ z
             }
             
             //Create a copy the AST
-            AST expression(tree);
+            //AST expression(tree);
+            AST expression = tree.simplify(variableStore);
 
             //Simplify the AST expression
-            expression.simplify(variableStore);
+            //expression.simplify(variableStore);
 
             //Print the new infix expression:
             cout << "out [" << lineCount << "]: ";

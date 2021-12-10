@@ -11,6 +11,7 @@
 #include <queue>
 #include <stack>
 #include <sstream>
+#include <cmath>
 #include "AST.h"
 #include "ITokStream.h" //for Tokens
 using namespace std;
@@ -76,7 +77,6 @@ AST::AST(vector<Token>& postfixExpr)
       //Operands will be leaf nodes
       if(postfixExpr[i].type_ == TokType::addop
          ||postfixExpr[i].type_ == TokType::mulop
-         ||postfixExpr[i].type_ == TokType::powop
          ||postfixExpr[i].type_ == TokType::powop){
          parent = new Node(postfixExpr[i]);//make a parent node
          childRight = operandNodes.top(); //top() returns reference
@@ -177,10 +177,16 @@ AST AST::simplify(map<char, AST>& v) //const
    //Create an AST from that postfix vector
    AST expression(postFixForSimplifying);
    
+   //cerr << "Before simplest: " << root_->tok_.value_ << endl;
+
    //Call simplestForm to do the math
    //and simplify the whole AST to the simplest form.
    simplestForm(expression.root_);
 
+   //cerr << "After simplest: " << root_->tok_.value_ << endl;
+   
+   //Deallocate the space for the vector
+   postFixForSimplifying.clear();
    //The AST has been simplified as much as possible.
    return expression;
 }
@@ -252,7 +258,7 @@ void AST::substituteHelper(Node* root, vector<Token> &postfixTokens)
  * in its simplest form
  * @param root the current node of the AST
  */
-void AST::simplestForm(Node* root)
+AST::Node* AST::simplestForm(Node* root)
 {
    if(root->left_ != nullptr)
       simplestForm(root->left_);
@@ -287,9 +293,9 @@ void AST::simplestForm(Node* root)
             result /= operand2;
          }  
       }else if (root->tok_.type_ == TokType::powop){
-         result /= operand2;
+         result = pow(result,operand2);
       }//end else-if statements
-
+      
       //Replace the parent node with the result
       //Change the parent node's value
       root->tok_.value_ = to_string(result);
@@ -301,8 +307,12 @@ void AST::simplestForm(Node* root)
       delete root->left_;
       delete root->right_;
       root->left_ = nullptr;
-      root->right_ = nullptr;
+      root->right_ = nullptr;      
    }//end if - the parent node has been replaced with a number
+
+   //cerr << "Root is: " << root->tok_.value_ << endl; //TEST
+
+   return root;
 }//end simplestForm
 
 /** Convert the expression back to infix and save it as a string

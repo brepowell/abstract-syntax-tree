@@ -112,7 +112,7 @@ class AST
    * in its simplest form
    * @param root the current node of the AST
    */
-   void simplestForm(Node* root);
+   AST::Node* simplestForm(Node* root);
 
    /**
    * @brief Empties an AST by deleting all nodes
