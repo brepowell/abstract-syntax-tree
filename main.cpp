@@ -200,7 +200,7 @@ int main(int argc, char const *argv[])
 should be 3 4 2 * 1 5 − 2 3 ^ ^ / +
 OR MAYBE 342*15-/23^^+ ????
 
-5 + 7
+5 + 7    //SOLVE IS NOT WORKING
 x := 1
 x + 8
 z := x + y
@@ -288,7 +288,7 @@ z
 
             //Print the new infix expression:
             cout << "out [" << lineCount << "]: ";
-            cout << tree.toInfix() << endl;
+            cout << expression.toInfix() << endl;
             
          }//end if
          //Else, the line was blank - don't echo a blank line

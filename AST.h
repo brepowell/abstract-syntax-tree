@@ -49,7 +49,7 @@ class AST
      No harm comes to the original.
     @param v is a variable store (a map of key, value pairs)
     @return a simplified AST */
-   AST simplify(map<char, AST>& v) const;
+   AST simplify(map<char, AST>& v); //const
 
    /** Convert the expression back to infix and save it as a string
     @post  If successful, this will add parentheses 

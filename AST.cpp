@@ -59,6 +59,7 @@ AST::AST(vector<Token>& postfixExpr)
       while (i < postfixExpr.size() 
          && (postfixExpr[i].type_ == TokType::variable 
          || postfixExpr[i].type_ == TokType::number)){
+         //Add numbers and variables to the operands queue
          operandTokens.push(postfixExpr[i]);
          i++; //Move index to the next position in the vector
       }
@@ -70,16 +71,14 @@ AST::AST(vector<Token>& postfixExpr)
          //Node constructor takes in a token object
          operandNodes.push(nodePtr);
       }
-
+      
       //Operators will be internal nodes
       //Operands will be leaf nodes
       if(postfixExpr[i].type_ == TokType::addop
          ||postfixExpr[i].type_ == TokType::mulop
          ||postfixExpr[i].type_ == TokType::powop
-         ||postfixExpr[i].type_ == TokType::powop
-      )
-      {
-         parent = new Node(postfixExpr[i]);
+         ||postfixExpr[i].type_ == TokType::powop){
+         parent = new Node(postfixExpr[i]);//make a parent node
          childRight = operandNodes.top(); //top() returns reference
          operandNodes.pop(); //Removes the element from the stack
          childLeft = operandNodes.top(); //top() returns reference
@@ -90,7 +89,14 @@ AST::AST(vector<Token>& postfixExpr)
 
          //Add the parent to the top of the operandNodes stack
          operandNodes.push(parent);
-      }//end if
+      
+      //Account for cases where there is only 1 node that is a number
+      }else if (postfixExpr[0].type_ == TokType::number
+         && postfixExpr.size() == 1){
+         //Add the parent to the top of the operandNodes stack
+         parent = operandNodes.top();
+         operandNodes.pop(); //Removes the element from the stack
+      }//end if/else
 
    }//end outer for
 
@@ -152,8 +158,9 @@ AST AST::operator=(const AST& rhs)
   No harm comes to the original.
  @param v is a variable store (a map of key, value pairs)
  @return a simplified AST */
-AST AST::simplify(map<char, AST>& v) const
+AST AST::simplify(map<char, AST>& v) //const
 {
+   Node* root = root_;
    /*You need to retain the original form of the AST 
    if it is stored in the variable store.
    That's because variable values can change...
@@ -165,7 +172,7 @@ AST AST::simplify(map<char, AST>& v) const
    //Call substitute to make sure each variable is replaced
    //This will recursively call itself until
    //no more substitutions are possible.
-   substitute(root_, v, postFixForSimplifying);
+   substitute(root, v, postFixForSimplifying);
 
    //Create an AST from that postfix vector
    AST expression(postFixForSimplifying);
@@ -196,17 +203,16 @@ void AST::substitute(Node* root, map<char, AST>& v,
 {
    //Convert the AST back into postfix for ease of substitution
    //Traverse in postorder and add to postfix vector.
-   substituteHelper(root_, postfixTokens);
+   if(root != nullptr)
+      substituteHelper(root_, postfixTokens);
 
    //For each token in the vector, check if it needs to be subsituted
-   for(Token i : postfixTokens){
-
+   for(int i = 0; i < postfixTokens.size(); i++){
       //Look for variables, skip numbers and operators
-      if(i.type_ == TokType::variable){
-         
-         //The search key for the variable store 
-         //is the value of the token i.
-         char key = i.value_[0];
+      if(postfixTokens[i].type_ == TokType::variable){
+         //The search key for the variable store is
+         //the value of the token i.
+         char key = postfixTokens[i].value_[0];
          map<char,AST>::iterator it;
          it = v.find(key);
       
@@ -214,10 +220,13 @@ void AST::substitute(Node* root, map<char, AST>& v,
          if (it != v.end()){
             //Call the substitute helper again for whatever
             //AST might be stored using this key
-            vector<Token> itemInVariable;
-            substituteHelper(it->second.root_, itemInVariable);
-            
-         }
+            vector<Token> innerTokens;
+            substituteHelper(it->second.root_, innerTokens);
+
+            //Combine the postfixTokens and the innerTokens
+            vector<Token>::iterator t = postfixTokens.begin() + i;
+            postfixTokens.insert(t, innerTokens.begin(), innerTokens.end());
+         }//end inner if
       }//end if
    }//end for
 }//end substitute
@@ -230,8 +239,10 @@ void AST::substitute(Node* root, map<char, AST>& v,
  */
 void AST::substituteHelper(Node* root, vector<Token> &postfixTokens)
 {
-   substituteHelper(root->left_, postfixTokens);
-   substituteHelper(root->right_, postfixTokens);
+   if(root->left_ != nullptr)
+      substituteHelper(root->left_, postfixTokens);
+   if(root->right_ != nullptr)
+      substituteHelper(root->right_, postfixTokens);
    postfixTokens.push_back(root->tok_); //add tokens to the vector
 }
 
@@ -243,9 +254,10 @@ void AST::substituteHelper(Node* root, vector<Token> &postfixTokens)
  */
 void AST::simplestForm(Node* root)
 {
-
-   simplestForm(root->left_);
-   simplestForm(root->right_);
+   if(root->left_ != nullptr)
+      simplestForm(root->left_);
+   if(root->right_ != nullptr)
+      simplestForm(root->right_);
 
    //addop, mulop, powop, variable, number
    //Look for nodes where there is an operator
@@ -304,7 +316,9 @@ string AST::toInfix() const
 
    //Pass the root of the AST to the infixHelper
    //Pass the infixExp string too
-   toInfixHelper(root_, infixExp);
+   if (root_ != nullptr){
+      toInfixHelper(root_, infixExp);
+   }
 
    return infixExp;
 }
@@ -314,30 +328,35 @@ string AST::toInfix() const
  @param root is the root node of the AST
  @return the pointer to current node in the AST */
 void AST::toInfixHelper(Node* root, string& infixExp) const
-{
+{   
+   //See if the token is an operator
+   if (root->tok_.type_ != TokType::variable 
+      && root->tok_.type_ != TokType::number){
+      //if it is, add an open parentheses to the string
+      infixExp += "(";
+   }//end if
 
-   if (root != nullptr){
-      //See if the token is an operator
-      if (root->tok_.type_ != TokType::variable 
-         && root->tok_.type_ != TokType::number){
-         //if it is, add an open parentheses
-         infixExp += "(";
-      }//end if
-
-      //Traverse the AST
+   //Traverse the AST
+   if(root->left_ != nullptr)
       toInfixHelper (root->left_, infixExp);
-      infixExp += root->tok_.value_ + " ";          //value_ is a string
+   infixExp += root->tok_.value_ + " ";          //value_ is a string
+   if(root->right_ != nullptr)
       toInfixHelper (root->right_, infixExp);
 
-      //See if the token is an operator again
-      if (root->tok_.type_ != TokType::variable 
-         && root->tok_.type_ != TokType::number){
-         infixExp += ")";
-      }//end if
-   }else{
-   return;
-   }//end else
+   //See if the token is an operator again
+   if (root->tok_.type_ != TokType::variable 
+      && root->tok_.type_ != TokType::number){
+      infixExp += ")";
+   }//end if
 
+   //Get rid of any extra spaces in the infixExp
+   for(int i = 0; i <infixExp.size(); i++){
+      if(i < infixExp.size() - 1 && 
+      infixExp[i] == ' ' &&
+      infixExp[i+1] == ')'){
+         infixExp.erase(i,1);
+      }
+   }
 }//end toInfixHelper
 
 /** Copy the tree recursively
@@ -354,8 +373,10 @@ AST::Node* AST::copy(Node* root)
    Node* newNode = new Node(root->tok_);
    
    //Use recursion to copy the left and right subtrees
-   newNode->left_ = copy(root->left_);
-   newNode->right_ = copy(root->right_);
+   if(root->left_ != nullptr)
+      newNode->left_ = copy(root->left_);
+   if(root->right_ != nullptr)
+      newNode->right_ = copy(root->right_);
 
    //Return the pointer to the root node
    return newNode;
@@ -366,10 +387,15 @@ AST::Node* AST::copy(Node* root)
  * and nulling all pointers
  * @param root the pointer to the root node for the tree*/
 void AST::clear(Node* root){
-   clear(root);
-   clear(root);
-   root->left_ = nullptr;
-   root->right_ = nullptr;
-   delete root;
-   root = nullptr;
-}
+   if(root != nullptr){
+      if(root->left_ != nullptr)
+         clear(root->left_);
+      if(root->right_ != nullptr)
+         clear(root->right_);
+
+      root->left_ = nullptr;
+      root->right_ = nullptr;
+      delete root;
+      root = nullptr;
+   }//end if - root node was null already
+}//end clear
