@@ -90,8 +90,11 @@ AST::AST(vector<Token>& postfixExpr)
          //Add the parent to the top of the operandNodes stack
          operandNodes.push(parent);
       
-      //Account for cases where there is only 1 node that is a number
-      }else if (postfixExpr[0].type_ == TokType::number
+      //cerr << "AST CONSTRUCTOR: operandNodes size " << operandNodes.size() << endl;
+      //cerr << "AST CONSTRUCTOR: postfixExpr size " << postfixExpr.size() << endl;
+      //Account for cases where there is only 1 node (a number or variable)
+      }else if ((postfixExpr[0].type_ == TokType::number ||
+         postfixExpr[0].type_ == TokType::variable)
          && postfixExpr.size() == 1){
          //Add the parent to the top of the operandNodes stack
          parent = operandNodes.top();
@@ -169,11 +172,14 @@ AST AST::simplify(map<char, AST>& v) //const
    //Make a vector - postfix vector (pass it to substitute)
    vector<Token> postFixForSimplifying;
 
+   //cerr << "SIMPLIFY postFixForSimplifying size " << postFixForSimplifying.size() << endl;
+
    //Call substitute to make sure each variable is replaced
    //This will recursively call itself until
    //no more substitutions are possible.
    substitute(root, v, postFixForSimplifying);
 
+   //cerr << "SIMPLIFY postFixForSimplifying size " << postFixForSimplifying.size() << endl;
    //Create an AST from that postfix vector
    AST expression(postFixForSimplifying);
    
@@ -207,10 +213,16 @@ AST AST::simplify(map<char, AST>& v) //const
 void AST::substitute(Node* root, map<char, AST>& v,
    vector<Token>& postfixTokens)
 {
+
+   //cerr << "SUBSTITUTE: substitute was called" << endl;
+   //cerr << "SUBSTITUTE: map size: " << v.size() << endl;
    //Convert the AST back into postfix for ease of substitution
    //Traverse in postorder and add to postfix vector.
    if(root != nullptr)
-      substituteHelper(root_, postfixTokens);
+      ASTtoPostfix(root_, postfixTokens);
+
+   //cerr << "SUBSTITUTE: postfixTokens size is " << postfixTokens.size() << endl;
+   //PROBLEM -- POSTFIX GROWS AND NEVER STOPS!
 
    //For each token in the vector, check if it needs to be subsituted
    for(int i = 0; i < postfixTokens.size(); i++){
@@ -221,20 +233,27 @@ void AST::substitute(Node* root, map<char, AST>& v,
          char key = postfixTokens[i].value_[0];
          map<char,AST>::iterator it;
          it = v.find(key);
-      
+         
+         //cerr << "SUBSTITUTE: key is " << key << endl;
+         
          //If the node's value exists as a variable in storage
          if (it != v.end()){
             //Call the substitute helper again for whatever
             //AST might be stored using this key
             vector<Token> innerTokens;
-            substituteHelper(it->second.root_, innerTokens);
+            ASTtoPostfix(it->second.root_, innerTokens);
 
             //Combine the postfixTokens and the innerTokens
             vector<Token>::iterator t = postfixTokens.begin() + i;
+            postfixTokens.erase(t);
             postfixTokens.insert(t, innerTokens.begin(), innerTokens.end());
+  
          }//end inner if
       }//end if
    }//end for
+
+   //cerr << "SUBSTITUTE: postfixTokens size is now " << postfixTokens.size() << endl;
+
 }//end substitute
 
 /** Substitute Helper
@@ -243,12 +262,12 @@ void AST::substitute(Node* root, map<char, AST>& v,
  * @param root the root node of the AST
  * @param postfixTokens the vector to store the tokens
  */
-void AST::substituteHelper(Node* root, vector<Token> &postfixTokens)
+void AST::ASTtoPostfix(Node* root, vector<Token> &postfixTokens)
 {
    if(root->left_ != nullptr)
-      substituteHelper(root->left_, postfixTokens);
+      ASTtoPostfix(root->left_, postfixTokens);
    if(root->right_ != nullptr)
-      substituteHelper(root->right_, postfixTokens);
+      ASTtoPostfix(root->right_, postfixTokens);
    postfixTokens.push_back(root->tok_); //add tokens to the vector
 }
 
@@ -409,3 +428,4 @@ void AST::clear(Node* root){
       root = nullptr;
    }//end if - root node was null already
 }//end clear
+

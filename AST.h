@@ -9,6 +9,8 @@
 #define AST_H
 #include <iostream>
 #include <string>
+#include <map>
+#include <vector>
 #include "ITokStream.h" //for Tokens
 using namespace std;
 
@@ -104,7 +106,7 @@ class AST
    * @param root the root node of the AST
    * @param postfixTokens the vector to store the tokens
    */
-   void substituteHelper(Node* root, vector<Token> &postfixTokens);
+   void ASTtoPostfix(Node* root, vector<Token> &postfixTokens);
 
    /**
    * @brief This will take an AST and simplify

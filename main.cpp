@@ -21,12 +21,13 @@ using namespace std;
   if the assignment operator is located
   @return the postfix vector*/
 vector<Token> toPostfix(const vector<Token> &infixTokens, 
-   bool foundError, bool &assign, char &var)
+   bool &foundError, bool &assign, char &var)
 {
    //Index i for traversing the infix vector
    int i = 0; 
    //check for the assignment operator
-   if(infixTokens[0].type_ == TokType::variable && 
+   if(infixTokens.size() > 1 &&
+      infixTokens[0].type_ == TokType::variable && 
       infixTokens[1].value_ == " " &&
       infixTokens[2].type_ == TokType::assign){
       assign = true;
@@ -47,7 +48,7 @@ vector<Token> toPostfix(const vector<Token> &infixTokens,
       if(infixTokens[i].type_ == TokType::null &&
         infixTokens[i].value_ != " "){
            //ERROR - THIS IN NOT A VALID TOKEN
-           cerr << "error" << endl;
+           //cerr << "error" << endl;
            foundError = true;
 
       //Skip spaces:
@@ -156,19 +157,26 @@ vector<Token> toPostfix(const vector<Token> &infixTokens,
  * @param tree the AST that needs to be stored
  * @param variable the key for the map
  */
-void store(map<char, AST> variableStore, const AST &tree, char key)
+void store(map<char, AST> &variableStore, const AST &tree, char key)
 {
    //Check to see if the var exists in the storage
    map<char,AST>::iterator it;
    it = variableStore.find(key);
       
+   //cerr << "STORE: variable store size "<< variableStore.size() << endl;
+
    //If the node's value exists as a variable in storage
    if (it != variableStore.end()){
+      //The key was found - replace it
       //Emplace only inserts the AST if the container has a key already
       variableStore.emplace(key, tree);  
    }else{
       variableStore.insert(pair<char, AST>(key, tree));
    }
+
+   //cerr << "STORE: variable store just inserted " << key << endl;
+   //cerr << "STORE: variable store size "<< variableStore.size() << endl;
+
 }
 
 /** Echoes the input to cout for the user to see
@@ -201,7 +209,9 @@ x := 1       //returns 1
 x + 8        //returns (x + 8)
 z := x + y   //returns (x + y)
 y := 8       //returns 8
-z            //SEGEMTATION FAULT
+z            //SEGMENTATION FAULT
+
+
 .
 */
 
@@ -274,14 +284,16 @@ z            //SEGEMTATION FAULT
             if (assign){
                //using "var" as the key
                store(variableStore, tree, var);
+               assign = false;
             }
+            
+            //cerr << "DRIVER: variable store size "<< variableStore.size() << endl;
             
             //Create a copy the AST
             //AST expression(tree);
             AST expression = tree.simplify(variableStore);
 
-            //Simplify the AST expression
-            //expression.simplify(variableStore);
+            //cerr << "DRIVER: variable store size "<< variableStore.size() << endl;
 
             //Print the new infix expression:
             cout << "out [" << lineCount << "]: ";
@@ -297,6 +309,6 @@ z            //SEGEMTATION FAULT
 
    //Empty the storage that holds all of the assigned ASTs
    variableStore.clear();
-
+   infixTokens.clear();
 
 }//end main
