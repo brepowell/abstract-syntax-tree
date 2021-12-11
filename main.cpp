@@ -206,8 +206,8 @@ int main(int argc, char const *argv[])
 
 5 + 7        //returns 12
 x := 1       //returns 1
-x + 8        //returns (x + 8)
-z := x + y   //returns (x + y)
+x + 8        //returns 9
+z := x + y   //returns (1 + y)
 y := 8       //returns 8
 z            //SEGMENTATION FAULT
 

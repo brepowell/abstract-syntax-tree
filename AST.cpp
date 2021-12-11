@@ -247,9 +247,15 @@ void AST::substitute(Node* root, map<char, AST>& v,
             vector<Token>::iterator t = postfixTokens.begin() + i;
             postfixTokens.erase(t);
             postfixTokens.insert(t, innerTokens.begin(), innerTokens.end());
-  
          }//end inner if
       }//end if
+      /*
+      //Account for instances like z := x + y = xy+, substitute 2 things
+      if(postfixTokens[0].type_ == TokType::variable && 
+         postfixTokens.size() > 1){
+         i = 0;
+      }
+      */
    }//end for
 
    //cerr << "SUBSTITUTE: postfixTokens size is now " << postfixTokens.size() << endl;
